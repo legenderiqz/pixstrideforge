@@ -1,0 +1,9 @@
+name = "${{ secrets.CF_WORKER_NAME }}"
+type = "javascript"
+account_id = "${{ secrets.CF_ACCOUNT_ID }}"
+workers_dev = true
+compatibility_date = "2025-12-29"
+
+kv_namespaces = [
+  { binding = "PIXELS", id = "${{ secrets.CF_KV_PIXELS_ID }}" }
+]
