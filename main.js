@@ -25,7 +25,7 @@ let puan = 100;
 let zoomLevel = 1;
 let offsetX   = 0;
 let offsetY   = 0;
-let pixels    = {};  // { "gx,gy": color }
+let pixels    = {};  // { "x,y": color }
 let cooldown  = null;
 let paletteOpen = false;
 
@@ -40,11 +40,6 @@ colorButton.style.backgroundColor = selectedColor;
 
 // Buraya Cloudflare Worker URL’inizi yazın:
 const WORKER_URL = "https://purple-mud-f3a4.pixstrideforge.workers.dev";
-
-window.onload = () => {
-  startCooldown();
-  draw();
-};
 
 // --- Yardımcı fonksiyonlar ---
 function screenToGrid(clientX, clientY){
@@ -99,6 +94,22 @@ async function sendPixel(gx, gy, color){
     }
   }catch(err){
     console.error("Pixel gönderilemedi:", err);
+  }
+}
+
+// --- Diğer kullanıcıların piksellerini çek ---
+async function fetchPixels(){
+  try {
+    const res = await fetch(`${WORKER_URL}/pixels`);
+    const list = await res.json();
+    pixels = {};
+    list.forEach(p => {
+      const coords = p.key.replace("pixel:", "").split(",");
+      pixels[`${coords[0]},${coords[1]}`] = p.color;
+    });
+    draw();
+  } catch(err){
+    console.error("Pikseller çekilemedi:", err);
   }
 }
 
@@ -181,3 +192,13 @@ upBtn.addEventListener("click", ()=>moveCamera(0,MOVE_SPEED));
 downBtn.addEventListener("click", ()=>moveCamera(0,-MOVE_SPEED));
 leftBtn.addEventListener("click", ()=>moveCamera(MOVE_SPEED,0));
 rightBtn.addEventListener("click", ()=>moveCamera(-MOVE_SPEED,0));
+
+// --- Oyunu başlat ---
+function loadGame(){
+  fetchPixels();               // Başlangıçta pikselleri çek
+  setInterval(fetchPixels, 2000); // 2 saniyede bir güncelle
+  startCooldown();
+  draw();
+}
+
+window.onload = loadGame;
