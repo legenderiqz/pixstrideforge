@@ -26,7 +26,7 @@ let zoomLevel = 1;
 let offsetX   = 0;
 let offsetY   = 0;
 let pixels    = {};  // { "x,y": color }
-let cooldown  = null;
+let cooldown  = false;
 let paletteOpen = false;
 
 const colors = [
@@ -40,6 +40,11 @@ colorButton.style.backgroundColor = selectedColor;
 
 // Buraya Cloudflare Worker URL’inizi yazın:
 const WORKER_URL = "https://purple-mud-f3a4.pixstrideforge.workers.dev";
+
+window.onload = async () => {
+  await loadPixels();
+  draw();
+};
 
 // --- Yardımcı fonksiyonlar ---
 function screenToGrid(clientX, clientY){
@@ -81,34 +86,39 @@ createColorSwatches();
 
 // --- Pixel atma ve backend ile iletişim ---
 async function sendPixel(gx, gy, color){
+  if(cooldown) return; // cooldown varsa atma
   try{
     const res = await fetch(`${WORKER_URL}/pixel`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ x: gx, y: gy, color })
     });
+    if(!res.ok) throw new Error("Sunucuda hata");
     const data = await res.json();
     if(data.success){
       pixels[`${gx},${gy}`] = color;
       draw();
+      // cooldown ve puan
+      puan -= 1;
+      puanDiv.innerHTML = "Puan: " + puan;
+      cooldown = true;
+      setTimeout(()=>{ cooldown = false; puan = Math.min(100, puan+1); puanDiv.innerHTML = "Puan: " + puan; }, 5000); // cooldown 5s
     }
   }catch(err){
     console.error("Pixel gönderilemedi:", err);
+    alert("Pixel kaydedilemedi");
   }
 }
 
-// --- Diğer kullanıcıların piksellerini çek ---
-async function fetchPixels(){
-  try {
+// --- Tüm pikselleri yükleme ---
+async function loadPixels(){
+  try{
     const res = await fetch(`${WORKER_URL}/pixels`);
-    const list = await res.json();
-    pixels = {};
-    list.forEach(p => {
-      const coords = p.key.replace("pixel:", "").split(",");
-      pixels[`${coords[0]},${coords[1]}`] = p.color;
-    });
+    if(!res.ok) throw new Error("Sunucuda hata");
+    const data = await res.json();
+    data.forEach(p => { pixels[`${p.x},${p.y}`] = p.color; });
     draw();
-  } catch(err){
+  }catch(err){
     console.error("Pikseller çekilemedi:", err);
   }
 }
@@ -118,21 +128,8 @@ canvas.addEventListener("click", e => {
   const { gx, gy } = screenToGrid(e.clientX, e.clientY);
   if(puan > 0){
     sendPixel(gx, gy, selectedColor);
-    puan -= 1;
-    puanDiv.innerHTML = "Puan: " + puan;
-    startCooldown();
   }
 });
-
-// --- Cooldown ---
-function startCooldown(){
-  if(cooldown) clearTimeout(cooldown);
-  cooldown = setTimeout(()=>{
-    if(puan < 100) puan += 1;
-    puanDiv.innerHTML = "Puan: " + puan;
-    startCooldown();
-  },1000);
-}
 
 // --- Draw fonksiyonu ---
 function draw(){
@@ -192,13 +189,3 @@ upBtn.addEventListener("click", ()=>moveCamera(0,MOVE_SPEED));
 downBtn.addEventListener("click", ()=>moveCamera(0,-MOVE_SPEED));
 leftBtn.addEventListener("click", ()=>moveCamera(MOVE_SPEED,0));
 rightBtn.addEventListener("click", ()=>moveCamera(-MOVE_SPEED,0));
-
-// --- Oyunu başlat ---
-function loadGame(){
-  fetchPixels();               // Başlangıçta pikselleri çek
-  setInterval(fetchPixels, 2000); // 2 saniyede bir güncelle
-  startCooldown();
-  draw();
-}
-
-window.onload = loadGame;
