@@ -15,28 +15,9 @@ Ticari bir amacı yoktur, yalnızca kişisel öğrenim ve eğlence içindir. Her
 - 🎯 Her piksel atışında 1 puan harcama  
 - 🎨 Renk paleti ve seçici  
 - 🧲 Bir piksele tıklayarak rengini alma  
-- 💾 Kaydetme ve yükleme sistemi (localStorage)
+- 💾 Kaydetme ve yükleme sistemi
 
-## 🔁 Haritayı Sıfırlamak İçin
 
-Tarayıcı konsoluna (F12 > Console sekmesi) şu kodu yazabilirsiniz:
-
-```javascript
-function resetGame() {
-  pixels = {};
-  puan = 100;
-  zoomLevel = 1;
-  offsetX = 0;
-  offsetY = 0;
-
-  localStorage.removeItem("pixstrideSave");
-  puanDiv.innerHTML = "Puan: " + puan;
-
-  draw();
-  saveGame();
-}
-resetGame()
-```
 
 ⚠️ Not
 
