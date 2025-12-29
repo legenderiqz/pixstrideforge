@@ -1,34 +1,37 @@
 export default {
   async fetch(request, env) {
-    const headers = {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
-    };
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers });
-    }
-
     const url = new URL(request.url);
     const path = url.pathname;
 
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    // Preflight CORS
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // Pixel ekleme
     if (path === "/pixel" && request.method === "POST") {
       try {
         const { x, y, color } = await request.json();
         if (x === undefined || y === undefined || color === undefined) {
-          return new Response("Eksik veri", { status: 400, headers });
+          return new Response("Eksik veri", { status: 400, headers: corsHeaders });
         }
 
         const key = `pixel:${x},${y}`;
         await env.PIXELS.put(key, color);
 
-        return new Response(JSON.stringify({ success: true }), { headers });
+        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
       } catch (e) {
-        return new Response("Hata: " + e.message, { status: 500, headers });
+        return new Response("Hata: " + e.message, { status: 500, headers: corsHeaders });
       }
     }
 
+    // Tüm pikselleri çekmek (isteğe bağlı)
     if (path === "/pixels" && request.method === "GET") {
       const list = [];
       const iterator = env.PIXELS.list();
@@ -36,9 +39,9 @@ export default {
         const val = await env.PIXELS.get(key.name);
         list.push({ key: key.name, color: val });
       }
-      return new Response(JSON.stringify(list), { headers });
+      return new Response(JSON.stringify(list), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response("Not Found", { status: 404, headers });
+    return new Response("Not Found", { status: 404, headers: corsHeaders });
   }
 };
