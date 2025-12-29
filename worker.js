@@ -19,7 +19,7 @@ export default {
       try {
         const { x, y, color } = await request.json();
         if (x === undefined || y === undefined || color === undefined) {
-          return new Response("Eksik veri", { status: 400, headers: corsHeaders });
+          return new Response(JSON.stringify({ error: "Eksik veri" }), { status: 400, headers: corsHeaders });
         }
 
         const key = `pixel:${x},${y}`;
@@ -27,25 +27,25 @@ export default {
 
         return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
       } catch (e) {
-        return new Response("Hata: " + e.message, { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
       }
     }
 
-    // Tüm pikselleri çekme (isteğe bağlı)
+    // Tüm pikselleri çekme
     if (path === "/pixels" && request.method === "GET") {
       try {
         const list = [];
-        const iterator = env.PIXELS.list();
-        for await (const key of iterator.keys) {
+        const result = await env.PIXELS.list();
+        for (const key of result.keys) {
           const val = await env.PIXELS.get(key.name);
           list.push({ key: key.name, color: val });
         }
         return new Response(JSON.stringify(list), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch (e) {
-        return new Response("Hata: " + e.message, { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
       }
     }
 
-    return new Response("Not Found", { status: 404, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Not Found" }), { status: 404, headers: corsHeaders });
   }
 };
