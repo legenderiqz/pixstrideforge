@@ -9,7 +9,7 @@ const leftBtn     = document.getElementById("left");
 const rightBtn    = document.getElementById("right");
 const colorButton = document.getElementById("color-button");
 const colorPalette= document.getElementById("color-palette");
-const puanDiv     = document.getElementById("puan")
+const puanDiv     = document.getElementById("puan");
 
 canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -25,7 +25,7 @@ let puan = 100;
 let zoomLevel = 1;
 let offsetX   = 0;
 let offsetY   = 0;
-let pixels    = {};  // { "x,y": color }
+let pixels    = {};  // { "gx,gy": color }
 let cooldown  = null;
 let paletteOpen = false;
 
@@ -38,11 +38,10 @@ const colors = [
 let selectedColor = colors[0];
 colorButton.style.backgroundColor = selectedColor;
 
-// Cloudflare Worker URL
+// Buraya Cloudflare Worker URL’inizi yazın:
 const WORKER_URL = "https://purple-mud-f3a4.pixstrideforge.workers.dev";
 
 window.onload = () => {
-  loadGame();
   startCooldown();
   draw();
 };
@@ -173,7 +172,6 @@ function doZoom(factor){
 zoomInBtn.addEventListener("click", ()=>doZoom(ZOOM_FACTOR));
 zoomOutBtn.addEventListener("click", ()=>doZoom(1/ZOOM_FACTOR));
 
-// --- Yön tuşları ---
 function moveCamera(dx, dy){
   offsetX += dx; offsetY += dy;
   clampCamera(); draw();
