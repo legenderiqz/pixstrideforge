@@ -1,15 +1,15 @@
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
-
-    // Preflight CORS
+    // Preflight CORS request
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
@@ -31,15 +31,19 @@ export default {
       }
     }
 
-    // Tüm pikselleri çekmek (isteğe bağlı)
+    // Tüm pikselleri çekme (isteğe bağlı)
     if (path === "/pixels" && request.method === "GET") {
-      const list = [];
-      const iterator = env.PIXELS.list();
-      for await (const key of iterator.keys) {
-        const val = await env.PIXELS.get(key.name);
-        list.push({ key: key.name, color: val });
+      try {
+        const list = [];
+        const iterator = env.PIXELS.list();
+        for await (const key of iterator.keys) {
+          const val = await env.PIXELS.get(key.name);
+          list.push({ key: key.name, color: val });
+        }
+        return new Response(JSON.stringify(list), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (e) {
+        return new Response("Hata: " + e.message, { status: 500, headers: corsHeaders });
       }
-      return new Response(JSON.stringify(list), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders });
